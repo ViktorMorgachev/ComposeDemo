@@ -1,13 +1,15 @@
 package com.pet_project.composedemo
 
 import android.content.res.Configuration.UI_MODE_NIGHT_NO
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,12 +17,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,7 +34,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AppTheme(darkTheme = false) {
-              PreviewConversation()
+                PreviewConversation()
             }
         }
     }
@@ -47,23 +48,12 @@ fun ContactCard(vararg card: Pair<Int, Pair<String, String>>) {
 
 }
 
-
 //@Preview(uiMode = UI_MODE_NIGHT_YES, showBackground = true, name = "Dark mode", showSystemUi = true)
-@Composable
-fun PreviewMessageCard() {
-    ContactCard(
-        R.drawable.brother to ("Brother" to "+78959276370"),
-        R.drawable.anastasia to ("Anastasia" to "+79995753220"),
-        R.drawable.olga to ("Olga" to "+79912087747"),
-        R.drawable.elizabet to ("Elizabet" to "+79877854748")
-    )
-}
 @Preview(name = "Light mode", uiMode = UI_MODE_NIGHT_NO, showBackground = true, showSystemUi = true)
 @Composable
-fun PreviewConversation(){
+fun PreviewConversation() {
     Conversation(messages = sampleConversation)
 }
-
 
 @Composable
 fun CardTextView(
@@ -79,26 +69,28 @@ fun CardTextView(
     )
 }
 
-
-
-
 @Composable
-fun Conversation(messages: List<Message>){
-LazyColumn{
-    items(messages){ message ->
-        ContactMessage(message = message)
+fun Conversation(messages: List<Message>) {
+    LazyColumn {
+        items(messages) { message ->
+            ContactMessage(message = message)
+        }
     }
 }
-}
-
-
 
 @Composable
 fun ContactMessage(message: Message) {
+
+    var isExpanded by remember {
+        mutableStateOf(false)
+    }
+    val messageColor: Color by animateColorAsState(targetValue = if (isExpanded) MaterialTheme.colors.primary else MaterialTheme.colors.surface)
     Surface(shape = MaterialTheme.shapes.medium, elevation = 4.dp) {
-        Row(modifier = Modifier
-            .background(color = Color.White)
-            .padding(all = 8.dp)) {
+        Row(
+            modifier = Modifier
+                .background(color = Color.White)
+                .padding(all = 8.dp)
+        ) {
             Image(
                 alignment = Alignment.Center,
                 modifier = Modifier
@@ -108,15 +100,29 @@ fun ContactMessage(message: Message) {
                 painter = painterResource(id = message.photoID),
                 contentDescription = "Contact profile picture"
             )
+
             Spacer(modifier = Modifier.width(8.dp))
-            Column() {
+            Column(modifier = Modifier.clickable { isExpanded = !isExpanded }) {
                 CardTextView(
                     text = message.name,
                     colorAuthor = MaterialTheme.colors.secondary,
                     style = MaterialTheme.typography.body1
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Text(text = message.message, style = MaterialTheme.typography.body2)
+                Surface(
+                    shape = MaterialTheme.shapes.medium,
+                    elevation = 1.dp,
+                    color = messageColor,
+                    modifier = Modifier
+                        .animateContentSize()
+                        .padding(1.dp)
+                ) {
+                    Text(
+                        text = message.message,
+                        style = MaterialTheme.typography.body2,
+                        maxLines = if (isExpanded) Int.MAX_VALUE else 1
+                    )
+                }
             }
         }
     }
@@ -126,9 +132,11 @@ fun ContactMessage(message: Message) {
 @Composable
 fun ContactCard(contact: Contact) {
     Surface(shape = MaterialTheme.shapes.medium, elevation = 4.dp) {
-        Row(modifier = Modifier
-            .background(color = Color.White)
-            .padding(all = 8.dp)) {
+        Row(
+            modifier = Modifier
+                .background(color = Color.White)
+                .padding(all = 8.dp)
+        ) {
             Image(
                 alignment = Alignment.Center,
                 modifier = Modifier
